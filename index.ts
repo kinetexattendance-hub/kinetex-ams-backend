@@ -2,11 +2,11 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import dotenv from 'dotenv';
-import { pool } from './db';
-import { authRoutes } from './routes/authRoutes';
-import { studentRoutes } from './routes/studentRoutes';
-import { feeRoutes } from './routes/feeRoutes';
-import { auditRoutes } from './routes/auditRoutes';
+import { pool } from '../src/db';
+import { authRoutes } from '../src/routes/authRoutes';
+import { studentRoutes } from '../src/routes/studentRoutes';
+import { feeRoutes } from '../src/routes/feeRoutes';
+import { auditRoutes } from '../src/routes/auditRoutes';
 
 dotenv.config();
 
@@ -18,7 +18,7 @@ fastify.register(jwt, {
   secret: process.env.JWT_SECRET || 'supersecret_fallback_key_2026',
 });
 
-// Register All API Routes
+// Register Routes
 fastify.register(authRoutes, { prefix: '/api/auth' });
 fastify.register(studentRoutes, { prefix: '/api/students' });
 fastify.register(feeRoutes, { prefix: '/api/fees' });
@@ -30,7 +30,7 @@ fastify.get('/health', async (request, reply) => {
     const dbResult = await pool.query('SELECT NOW()');
     return {
       status: 'ok',
-      message: 'Kinetex AMS Backend is running smoothly!',
+      message: 'Kinetex AMS Backend is running smoothly on Vercel!',
       dbTime: dbResult.rows[0].now,
     };
   } catch (error) {
@@ -38,16 +38,8 @@ fastify.get('/health', async (request, reply) => {
   }
 });
 
-const start = async () => {
-  try {
-    const port = Number(process.env.PORT) || 5000;
-    const host = '0.0.0.0';
-    await fastify.listen({ port, host });
-    console.log(`🚀 Server listening on http://${host}:${port}`);
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
-
-start();
+// Vercel Serverless Handler
+export default async function handler(req: any, res: any) {
+  await fastify.ready();
+  fastify.server.emit('request', req, res);
+}
